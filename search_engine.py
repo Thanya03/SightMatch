@@ -70,7 +70,7 @@ def search_image(uploaded_file, top_k=5):
 
     results = []
     for rank, idx in enumerate(I[0]):
-        path = image_paths[idx].replace('//', '/')
+        path = image_paths[idx].replace('\\', '/')
         #description = descriptions.get(path, "Description not available") ## used for windows systems
         description = descriptions.get(path, "Description not available") ## used for Linux systems
         
