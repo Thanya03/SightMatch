@@ -43,6 +43,8 @@ def generate_search_url(description, search_engine="amazon"):
     
     if search_engine == "amazon":
         return f"https://www.amazon.com/s?k={encoded_query}"
+    elif search_engine == "ppc":
+        return f"https://www.purchasingpower.com/store/unbxdSearch?text="
     elif search_engine == "google":
         return f"https://www.google.com/search?tbm=shop&q={encoded_query}"
     elif search_engine == "ebay":
@@ -75,7 +77,7 @@ def search_image(uploaded_file, top_k=5):
         description = descriptions.get(path.replace('/','//'), "Description not available") ## used for Linux systems
         
         # Generate search URL from description
-        search_url = generate_search_url(description, search_engine="amazon")
+        search_url = generate_search_url(description, search_engine="ppc")
         
         results.append({
             "path": path,
