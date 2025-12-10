@@ -129,7 +129,7 @@ if file_obj:
         with cols[i % 3]:
             with st.container(border=True, height=390):
                 # Display image
-                img = Image.open(["path"]).convert("RGB")
+                img = Image.open(r["path"]).convert("RGB")
                 img_resized = img.resize((200, 200), Image.Resampling.LANCZOS)
                 st.image(img_resized, width=200, use_container_width=False)
                 
