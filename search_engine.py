@@ -44,7 +44,7 @@ def generate_search_url(description, search_engine="amazon"):
     if search_engine == "amazon":
         return f"https://www.amazon.com/s?k={encoded_query}"
     elif search_engine == "ppc":
-        return f"https://www.purchasingpower.com/store/unbxdSearch?text="
+        return f"https://www.purchasingpower.com/store/unbxdSearch?text={encoded_query}"
     elif search_engine == "google":
         return f"https://www.google.com/search?tbm=shop&q={encoded_query}"
     elif search_engine == "ebay":
