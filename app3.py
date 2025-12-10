@@ -1,148 +1,200 @@
 import streamlit as st
 from search_engine import search_image
 from PIL import Image
+import random
 
 # -----------------------------
-# Page Config
+# SESSION STATE INIT
+# -----------------------------
+if "page" not in st.session_state:
+    st.session_state["page"] = "home"
+
+if "selected_product" not in st.session_state:
+    st.session_state["selected_product"] = None
+
+if "results_cache" not in st.session_state:
+    st.session_state["results_cache"] = None
+
+if "query_image" not in st.session_state:
+    st.session_state["query_image"] = None
+
+# -----------------------------
+# PAGE CONFIG
 # -----------------------------
 st.set_page_config(page_title="PPC Sight Match", layout="wide")
 
 # -----------------------------
-# Custom Amazon-like CSS
+# STYLES
 # -----------------------------
 st.markdown("""
 <style>
-body {
-    background-color: #f3f3f3;
-}
-
 .amazon-bar {
-    background-color: #131921;
-    padding: 12px;
+    background-color: #0f172a;
+    padding: 18px;
+    border-radius: 18px;
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .search-box {
-    display: flex;
-    background: white;
-    border-radius: 6px;
-    width: 520px;
-    overflow: hidden;
+    background: rgba(255,255,255,0.08);
+    padding: 14px 20px;
+    border-radius: 30px;
+    width: 420px;
+    color: gray;
 }
 
-.search-box input {
-    border: none;
+.product-card {
+    background: white;
     padding: 12px;
-    width: 100%;
-}
-
-.search-btn {
-    background: #febd69;
-    padding: 12px 18px;
-    font-weight: bold;
-}
-
-.card {
-    background: white;
-    padding: 15px;
-    border-radius: 10px;
-    box-shadow: 0px 2px 6px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    box-shadow: 0px 2px 10px rgba(0,0,0,0.25);
     text-align: center;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
 }
 
-.card img {
-    border-radius: 8px;
-    margin-bottom: 10px;
+.price {
+    font-size: 28px;
+    font-weight: bold;
+    color: #B12704;
 }
 
-.product-description {
-    font-size: 1.2em;
-    color: #333;
-    margin-top: 8px;
-    margin-bottom: 5px;
-    line-height: 1.4;
-    min-height: 40px;
+.old-price {
+    text-decoration: line-through;
+    color: gray;
+    margin-left: 10px;
 }
 
-.similarity-score {
-    font-size: 1.0em;
-    color: #666;
-    font-weight: 500;
+.discount {
+    color: green;
+    font-weight: bold;
+    margin-bottom: 12px;
+}
+
+.pdp-box {
+    background: white;
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0px 4px 20px rgba(0,0,0,0.25);
 }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("Sight Match")
-
-# -----------------------------
-# SIDEBAR : Upload / Camera / Query Image
-# -----------------------------
+# =========================================================
+# ✅ SIDEBAR: UPLOAD + PREVIEW BELOW UPLOAD (FIXED)
+# =========================================================
 with st.sidebar:
-    upload = st.file_uploader("Upload product image", type=["jpg", "png", "jpeg"])
+    st.markdown("## 📤 Upload Product Image")
+
+    upload = st.file_uploader("Upload image", type=["jpg", "png", "jpeg"])
     camera = st.camera_input("Use camera")
 
-    query_image = None
     file_obj = None
 
     if upload:
-        query_image = Image.open(upload).convert("RGB")
         file_obj = upload
+        st.session_state["query_image"] = Image.open(upload).convert("RGB")
+        st.session_state["results_cache"] = None
 
     elif camera:
-        query_image = Image.open(camera).convert("RGB")
         file_obj = camera
+        st.session_state["query_image"] = Image.open(camera).convert("RGB")
+        st.session_state["results_cache"] = None
 
-    if query_image:
-        st.image(query_image, width=250)
+    st.markdown("---")
+    st.markdown("### 🔎 Your Search Image")
 
-# -----------------------------
-# MAIN AREA : Top Amazon Search Bar
-# -----------------------------
-st.markdown(
-    """
-    <div class="amazon-bar">
-        <div class="search-box">
-            <input placeholder="What can I help you find today?" disabled />
+    if st.session_state["query_image"] is not None:
+        st.image(st.session_state["query_image"], use_container_width=True)
+    else:
+        st.info("No image uploaded yet")
+
+# =============================
+# ✅ HOME PAGE (SEARCH)
+# =============================
+if st.session_state["page"] == "home":
+
+    st.markdown("""
+        <div class="amazon-bar">
+            <h1 style="color:white;">Sight <span style="color:#38bdf8">Match</span></h1>
+            <div class="search-box">Search by image, product, or brand...</div>
         </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+    """, unsafe_allow_html=True)
 
-st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("---")
+    st.subheader("Results")
 
-# -----------------------------
-# MAIN AREA : Results
-# -----------------------------
-st.subheader("Results")
+    # ✅ Run search only once & cache it
+    if st.session_state["query_image"] and st.session_state["results_cache"] is None:
+        with st.spinner("Searching similar products..."):
+            st.session_state["results_cache"] = search_image(file_obj, top_k=9)
 
-if file_obj:
-    with st.spinner("Searching similar products..."):
-        results = search_image(file_obj, top_k=9)
+    results = st.session_state["results_cache"]
 
-    cols = st.columns(3)
-    for i, r in enumerate(results):
-        with cols[i % 3]:
-            with st.container(border=True, height=390):
-                # Display image
-                img = Image.open(r["path"].replace('\\','/')).convert("RGB")
-                img_resized = img.resize((200, 200), Image.Resampling.LANCZOS)
-                st.image(img_resized, width=200, use_container_width=False)
-                
-                # Display description
-                description = r.get("description", "Description not available")
-                st.markdown(f'<div class="product-description">{description}</div>', unsafe_allow_html=True)
-                
-                # Display similarity score
-                st.markdown(f'<div class="similarity-score">Similarity: {r["score"]:.2f}</div>', unsafe_allow_html=True)
-                
-                # Display search link button
-                product_url = r.get("url")
-                if product_url:
-                    st.link_button("Search on PPC", product_url, use_container_width=True)
-else:
-    st.info("Upload an image or use the camera to start the search.")
+    if results:
+        cols = st.columns(3)
+        for i, r in enumerate(results):
+            with cols[i % 3]:
+                with st.container(border=True):
+
+                    img = Image.open(r["path"]).convert("RGB")
+                    img = img.resize((240, 240))
+                    st.image(img)
+
+                    st.markdown(f"**{r.get('description','No description')}**")
+                    st.markdown(f"Similarity: `{r['score']:.2f}`")
+
+                    if st.button("🔍 View Product", key=f"p{i}"):
+                        st.session_state["selected_product"] = r
+                        st.session_state["page"] = "product"
+                        st.rerun()
+
+    else:
+        st.info("Upload an image to start visual search.")
+
+# =============================
+# ✅ PRODUCT DETAILS PAGE (PDP)
+# =============================
+if st.session_state["page"] == "product":
+
+    product = st.session_state["selected_product"]
+
+    st.markdown("## 🛍 Product Details")
+
+    col1, col2 = st.columns([1, 1])
+
+    with col1:
+        img = Image.open(product["path"]).convert("RGB")
+        st.image(img, width=380)
+
+    with col2:
+        with st.container(border=True):
+            st.markdown(f"## {product.get('description','Product')}")
+
+            price = random.randint(999, 4999)
+            discount = random.randint(15, 45)
+            old_price = round(price * (1 + discount / 100))
+
+            st.markdown(f"""
+            <div class="price">₹{price} 
+            <span class="old-price">₹{old_price}</span></div>
+            <div class="discount">{discount}% OFF</div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("### ✅ Features")
+            st.write("""
+            • Premium quality material  
+            • Lightweight & breathable  
+            • Durable stitching  
+            • Trendy modern fit  
+            • PPC certified quality  
+            """)
+
+            if st.button("🛒 Add To Cart"):
+                st.success("Item added to cart successfully!")
+
+    st.markdown("---")
+
+    if st.button("⬅ Back to Search"):
+        st.session_state["page"] = "home"
+        st.rerun()
