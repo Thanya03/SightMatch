@@ -143,6 +143,6 @@ if file_obj:
                 # Display search link button
                 product_url = r.get("url")
                 if product_url:
-                    st.link_button("🔍 Search on AMAZON", product_url, use_container_width=True)
+                    st.link_button("Search on PPC", product_url, use_container_width=True)
 else:
     st.info("Upload an image or use the camera to start the search.")
