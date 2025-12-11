@@ -171,13 +171,13 @@ if st.session_state["page"] == "product":
         with st.container(border=True):
             st.markdown(f"## {product.get('description','Product')}")
 
-            price = random.randint(999, 4999)
-            discount = random.randint(15, 45)
+            price = random.randint(499, 2599)
+            discount = random.randint(5, 25)
             old_price = round(price * (1 + discount / 100))
 
             st.markdown(f"""
-            <div class="price">₹{price} 
-            <span class="old-price">₹{old_price}</span></div>
+            <div class="price">${price} 
+            <span class="old-price">${old_price}</span></div>
             <div class="discount">{discount}% OFF</div>
             """, unsafe_allow_html=True)
 
