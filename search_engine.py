@@ -85,5 +85,7 @@ def search_image(uploaded_file, top_k=5):
             "description": description,
             "url": search_url
         })
-
-    return results
+    sorted_results = sorted(results, key=lambda x: x["score"], reverse=True)
+    return sorted_results
+ 
+    
